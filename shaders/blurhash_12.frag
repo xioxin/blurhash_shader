@@ -8,14 +8,6 @@ uniform vec2 iResolution;
 uniform vec2 num;
 uniform vec3 colors[MAX_COLOR_COUNT];
 
-float sRGBToLinear(float v) {
-    if (v <= 0.04045) {
-        return v / 12.92;
-    } else {
-        return pow((v + 0.055) / 1.055, 2.4);
-    }
-}
-
 float linearTosRGB(float value) {
     float v = max(0, min(1, value));
     if (v <= 0.0031308) {

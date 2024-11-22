@@ -1,4 +1,7 @@
-# BlurHash Flutter Implementation
+BlurHash_Shader
+------------
+
+[![Pub Version (including pre-releases)](https://img.shields.io/pub/v/blurhash_shader?include_prereleases)](https://pub.dev/packages/flutter_boring_avatars)
 
 This project is a Flutter implementation of **BlurHash**, an algorithm for encoding images into a compact string representation. It is designed to create a visually appealing low-resolution placeholder for images while they are loading, leveraging the power of shaders to speed up rendering.
 
@@ -17,7 +20,7 @@ Add the following dependency to your `pubspec.yaml` file:
 dependencies:
   flutter:
     sdk: flutter
-  blurhash_shader: ^1.0.0 # Replace with the latest version
+  blurhash_shader: any # or the latest version on Pub
 ```
 
 ### Usage
@@ -91,5 +94,3 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - [BlurHash](https://blurha.sh/) for the original algorithm.
 - [flutter_blurhash](https://pub.dev/packages/flutter_blurhash) for the initial implementation.
 - Flutter community for their continuous support and contributions.
-
-For more information, please check the [official documentation](https://flutter.dev/docs).

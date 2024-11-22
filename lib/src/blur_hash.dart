@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_shaders/flutter_shaders.dart';
 import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'common.dart';
@@ -26,7 +25,7 @@ class BlurHash extends StatefulWidget {
     ]);
   }
 
-  static Future<FragmentShader> getShader(String assetKey) async {
+  static Future<ui.FragmentShader> getShader(String assetKey) async {
     if (_shaderCache.containsKey(assetKey)) {
       return _shaderCache[assetKey]!.fragmentShader();
     }
@@ -87,7 +86,7 @@ class BlurHash extends StatefulWidget {
 }
 
 class _BlurHashState extends State<BlurHash> {
-  FragmentShader? shader;
+  ui.FragmentShader? shader;
 
   late final BlurData data;
   late final bool small;
@@ -121,7 +120,7 @@ class _BlurHashState extends State<BlurHash> {
 }
 
 class BlurHashPainter extends CustomPainter {
-  final FragmentShader shader;
+  final ui.FragmentShader shader;
   final BlurData data;
   final int maxColorSize;
 
@@ -129,24 +128,23 @@ class BlurHashPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    shader.setFloatUniforms((s) {
-      s.setSize(size);
-      s.setFloat(data.w.toDouble());
-      s.setFloat(data.h.toDouble());
-      final l = max(maxColorSize, data.colors.length);
-      for (int i = 0; i < l; i++) {
-        if (i < data.colors.length) {
-          final color = data.colors[i];
-          s.setFloat(color.$1);
-          s.setFloat(color.$2);
-          s.setFloat(color.$3);
-        } else {
-          s.setFloat(0);
-          s.setFloat(0);
-          s.setFloat(0);
-        }
+    shader.setFloat(0, size.width);
+    shader.setFloat(1, size.height);
+    shader.setFloat(2, data.w.toDouble());
+    shader.setFloat(3, data.h.toDouble());
+    final l = max(maxColorSize, data.colors.length);
+    for (int i = 0; i < l; i++) {
+      if (i < data.colors.length) {
+        final color = data.colors[i];
+        shader.setFloat(4 + i * 3, color.$1);
+        shader.setFloat(5 + i * 3, color.$2);
+        shader.setFloat(6 + i * 3, color.$3);
+      } else {
+        shader.setFloat(4 + i * 3, 0);
+        shader.setFloat(5 + i * 3, 0);
+        shader.setFloat(6 + i * 3, 0);
       }
-    });
+    }
     final Paint paint = Paint();
     paint.shader = shader;
     canvas.drawRect(Offset.zero & size, paint);
