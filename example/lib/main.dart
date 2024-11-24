@@ -1,7 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:blurhash_shader/blurhash_shader.dart';
-import 'package:flutter_blurhash/flutter_blurhash.dart' as fbh;
 
 const testHash = [
   // 4 * 3
@@ -65,80 +63,100 @@ class _MyAppState extends State<MyApp> {
     super.initState();
   }
 
-  BlurType useShaderType = BlurType.shader;
+  String hash = 'LEHLk~WB2yk8pyo0adR*.7kCMdnj';
+  int hashIndex = 0;
+
+  late final TextEditingController controller =
+      TextEditingController(text: hash);
+
+  static String? getErrorMsg(String blurHash) {
+    try {
+      BlurHash.decode(blurHash);
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  isValid(String blurHash) {
+    try {
+      BlurHash.decode(blurHash);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      showPerformanceOverlay: !kIsWeb,
-      home: ColoredBox(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.only(top: kIsWeb ? 0 : 170),
-          child: Scaffold(
-            appBar: AppBar(
-              title: switch (useShaderType) {
-                BlurType.shader => const Text('🚀 package:blurhash_shader'),
-                BlurType.shaderToImage =>
-                  const Text('🚗 package:blurhash_shader (ToImage)'),
-                BlurType.fbhWidget =>
-                  const Text('🐢 package:flutter_blurhash (Widget)'),
-                BlurType.fbhImage =>
-                  const Text('🚗 package:flutter_blurhash (Image)'),
-              },
-              actions: [
-                SegmentedButton(
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(
-                      tooltip: "package:blurhash_shader",
-                      value: BlurType.shader,
-                      label: Text('🚀Shader'),
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('BlurHash Shader Example'),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      height: 200,
+                      width: 200,
+                      child: BlurHash(hash),
                     ),
-                    ButtonSegment(
-                      tooltip: "package:blurhash_shader",
-                      value: BlurType.shaderToImage,
-                      label: Text('🚗ShaderToImage'),
-                    ),
-                    ButtonSegment(
-                      tooltip: "package:flutter_blurhash",
-                      value: BlurType.fbhWidget,
-                      label: Text('🐢fbh:Widget'),
-                    ),
-                    ButtonSegment(
-                      tooltip: "package:flutter_blurhash",
-                      value: BlurType.fbhImage,
-                      label: Text('🚗fbh:Image'),
+                    const SizedBox(width: 16),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 1000),
+                      curve: Curves.easeInOutCubicEmphasized,
+                      decoration: BlurHashDecoration(
+                        hash,
+                        shape: const OvalBorder(
+                          side: BorderSide(
+                            color: Colors.red,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      height: 200,
+                      width: 200,
                     ),
                   ],
-                  selected: {useShaderType},
-                  onSelectionChanged: (v) {
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    hintText: 'Enter a BlurHash',
+                    errorText: getErrorMsg(controller.text),
+                  ),
+                  controller: controller,
+                  onChanged: (hash) {
                     setState(() {
-                      useShaderType = v.first;
+                      if (isValid(hash)) {
+                        this.hash = hash;
+                      }
                     });
                   },
-                )
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                    onPressed: () {
+                      // testHash
+                      final newHash = testHash[++hashIndex % testHash.length];
+                      setState(() {
+                        hash = newHash;
+                      });
+                      // Future(() {
+                      //   controller.text = newHash;
+                      // });
+                    },
+                    child: Text("Random")),
               ],
-            ),
-            body: GridView.builder(
-              padding: const EdgeInsets.all(4),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 80,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 4,
-                childAspectRatio: 4 / 3,
-              ),
-              itemBuilder: (BuildContext context, int index) {
-                final code = testHash[index % testHash.length];
-                return switch (useShaderType) {
-                  BlurType.shader => BlurHash(code),
-                  BlurType.shaderToImage =>
-                    Image(image: BlurHashImageProvider(code), fit: BoxFit.fill),
-                  BlurType.fbhWidget => fbh.BlurHash(hash: code),
-                  BlurType.fbhImage =>
-                    Image(image: fbh.BlurHashImage(code), fit: BoxFit.fill),
-                };
-              },
             ),
           ),
         ),

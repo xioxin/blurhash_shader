@@ -33,9 +33,12 @@ void main() {
         vec2 basics = uvpi * loopPos;
         color += sColor * cos(basics.x) * cos(basics.y);
     }
+
+//    fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+
     fragColor = vec4(
-        linearTosRGB(color.r),
-        linearTosRGB(color.g),
-        linearTosRGB(color.b),
+    linearTosRGB(color.r),
+    linearTosRGB(color.g),
+    linearTosRGB(color.b),
     1.0);
 }

@@ -1,13 +1,50 @@
 import 'dart:math';
+import 'dart:ui';
 
-typedef DoubleColor = (double r, double g, double b);
-typedef BlurData = ({
-  int w,
-  int h,
-  double quantised,
-  double punch,
-  List<DoubleColor> colors,
-});
+class DoubleColor {
+  final double r;
+  final double g;
+  final double b;
+
+  const DoubleColor(this.r, this.g, this.b);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is DoubleColor) {
+      return r == other.r && g == other.g && b == other.b;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([r, g, b]);
+
+  @override
+  String toString() {
+    return 'DoubleColor(r: $r, g: $g, b: $b)';
+  }
+
+  DoubleColor copyWith({
+    double? r,
+    double? g,
+    double? b,
+  }) {
+    return DoubleColor(
+      r ?? this.r,
+      g ?? this.g,
+      b ?? this.b,
+    );
+  }
+
+  DoubleColor lerp(DoubleColor end, double t) {
+    return DoubleColor(
+      lerpDouble(r, end.r, t)!,
+      lerpDouble(g, end.g, t)!,
+      lerpDouble(b, end.b, t)!,
+    );
+  }
+}
 
 int _sign(double n) => (n < 0 ? -1 : 1);
 
@@ -32,18 +69,18 @@ DoubleColor decodeDC(int value) {
   final intR = value >> 16;
   final intG = (value >> 8) & 255;
   final intB = value & 255;
-  return (sRGBToLinear(intR), sRGBToLinear(intG), sRGBToLinear(intB));
+  return DoubleColor(
+      sRGBToLinear(intR), sRGBToLinear(intG), sRGBToLinear(intB));
 }
 
 DoubleColor decodeAC(int value, double maximumValue) {
   final quantR = (value / (19 * 19)).floor();
   final quantG = (value / 19).floor() % 19;
   final quantB = value % 19;
-  final rgb = (
-    _signPow((quantR - 9) / 9, 2.0) * maximumValue,
-    _signPow((quantG - 9) / 9, 2.0) * maximumValue,
-    _signPow((quantB - 9) / 9, 2.0) * maximumValue
-  );
+  final rgb = DoubleColor(
+      _signPow((quantR - 9) / 9, 2.0) * maximumValue,
+      _signPow((quantG - 9) / 9, 2.0) * maximumValue,
+      _signPow((quantB - 9) / 9, 2.0) * maximumValue);
   return rgb;
 }
 

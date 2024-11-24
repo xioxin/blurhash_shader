@@ -1,6 +1,6 @@
 name: blurhash_shader
 description: "Implements BlurHash to create visually appealing low-resolution image placeholders using shaders for faster rendering."
-version: 1.0.0
+version: 1.1.0
 homepage: https://github.com/xioxin/blurhash_shader
 repository: https://github.com/xioxin/blurhash_shader
 issue_tracker: https://github.com/xioxin/blurhash_shader/issues
@@ -20,7 +20,6 @@ dev_dependencies:
 
 flutter:
   shaders:
-    - shaders/blurhash_12.frag
     - shaders/blurhash_64.frag
 
 funding:

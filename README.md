@@ -1,9 +1,9 @@
 BlurHash_Shader
 ------------
 
-[![Pub Version (including pre-releases)](https://img.shields.io/pub/v/blurhash_shader?include_prereleases)](https://pub.dev/packages/flutter_boring_avatars)
+[![Pub Version (including pre-releases)](https://img.shields.io/pub/v/blurhash_shader?include_prereleases)](https://pub.dev/packages/blurhash_shader)
 
-This project is a Flutter implementation of **BlurHash**, an algorithm for encoding images into a compact string representation. It is designed to create a visually appealing low-resolution placeholder for images while they are loading, leveraging the power of shaders to speed up rendering.
+This package is a Flutter implementation of **BlurHash**, an algorithm for encoding images into a compact string representation. It is designed to create a visually appealing low-resolution placeholder for images while they are loading, leveraging the power of shaders to speed up rendering.
 
 ## Features
 
@@ -39,7 +39,7 @@ import 'package:blurhash_shader/blurhash_shader.dart';
 BlurHash('LEHLk~WB2yk8pyo0adR*.7kCMdnj')
 ```
 
-### Preload Shaders (optional)
+### Preload Shaders (Must)
 
 To preload shaders and avoid flickering during their initial use, call the following method at the start of your application:
 
@@ -50,6 +50,28 @@ void main() async {
 }
 ```
 
+### Use as Decoration
+
+```dart
+Container(
+  width: 300,
+  height: 300,
+  decoration: BlurHashDecoration(
+    hash: 'LEHLk~WB2yk8pyo0adR*.7kCMdnj',
+  ),
+);
+
+AnimatedContainer(
+  width: 300,
+  height: 300,
+  duration: Duration(seconds: 1),
+  decoration: BlurHashDecoration(
+    // change hash value to see the transition effect
+    hash: 'LEHLk~WB2yk8pyo0adR*.7kCMdnj',
+  ),
+);
+```
+
 ### Example
 
 Here is a simple example of how to implement the `BlurHash` widget:
@@ -58,7 +80,9 @@ Here is a simple example of how to implement the `BlurHash` widget:
 import 'package:flutter/material.dart';
 import 'package:blurhash_shader/blurhash_shader.dart';
 
-void main() {
+void main() async {
+  // Preload shaders
+  await BlurHash.loadShader();
   runApp(MyApp());
 }
 

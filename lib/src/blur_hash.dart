@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
@@ -5,45 +8,165 @@ import 'package:flutter/widgets.dart';
 import 'common.dart';
 import 'dart:ui' as ui;
 
+class BlurData {
+  final int width;
+  final int height;
+  final double quantised;
+  final double punch;
+  final double opacity;
+  final List<DoubleColor> colors;
+
+  final BlurData? mixed;
+  final double? mixedT;
+
+  const BlurData({
+    required this.width,
+    required this.height,
+    required this.quantised,
+    required this.punch,
+    required this.colors,
+    this.opacity = 1.0,
+    this.mixed,
+    this.mixedT,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is BlurData) {
+      return width == other.width &&
+          height == other.height &&
+          quantised == other.quantised &&
+          punch == other.punch &&
+          opacity == other.opacity &&
+          listEquals(colors, other.colors);
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hashAll([width, height, quantised, punch, ...colors]);
+
+  @override
+  String toString() {
+    return 'BlurData(w: $width, h: $height, quantised: $quantised, punch: $punch, colors: $colors)';
+  }
+
+  // copy
+  BlurData copyWith({
+    int? width,
+    int? height,
+    double? quantised,
+    double? punch,
+    double? opacity,
+    List<DoubleColor>? colors,
+    BlurData? mixed,
+    double? mixedT,
+  }) {
+    return BlurData(
+      width: width ?? this.width,
+      height: height ?? this.height,
+      quantised: quantised ?? this.quantised,
+      punch: punch ?? this.punch,
+      opacity: opacity ?? this.opacity,
+      colors: colors ?? this.colors,
+      mixed: mixed ?? this.mixed,
+      mixedT: mixedT ?? this.mixedT,
+    );
+  }
+
+  BlurData lerp(BlurData end, double t) {
+    if (t == 1) return end;
+    if (width != end.width || height != end.height) {
+      if (mixed != null && mixed != end) {
+        return mixed!.lerp(end, t);
+      }
+      return copyWith(
+        mixed: end,
+        mixedT: t,
+      );
+    }
+    return BlurData(
+      width: lerpDouble(width, end.width, t)!.toInt(),
+      height: lerpDouble(height, end.height, t)!.toInt(),
+      quantised: lerpDouble(quantised, end.quantised, t)!,
+      punch: lerpDouble(punch, end.punch, t)!,
+      opacity: lerpDouble(opacity, end.opacity, t)!,
+      colors: List.generate(
+        colors.length,
+        (i) => colors[i].lerp(
+          end.colors[i],
+          t,
+        ),
+      ),
+    );
+  }
+
+  void paint(Canvas canvas, Rect rect, ui.FragmentShader shader,
+      {double o = 1.0}) {
+    shader.setFloat(0, rect.width);
+    shader.setFloat(1, rect.height);
+    shader.setFloat(2, width.toDouble());
+    shader.setFloat(3, height.toDouble());
+    shader.setFloat(4, 1.0);
+    final l = max(64, colors.length);
+    for (int i = 0; i < l; i++) {
+      if (i < colors.length) {
+        final color = colors[i];
+        shader.setFloat(4 + i * 3, color.r);
+        shader.setFloat(5 + i * 3, color.g);
+        shader.setFloat(6 + i * 3, color.b);
+      } else {
+        shader.setFloat(4 + i * 3, 0);
+        shader.setFloat(5 + i * 3, 0);
+        shader.setFloat(6 + i * 3, 0);
+      }
+    }
+    final Paint paint = Paint();
+    paint.color = Color.fromRGBO(0, 0, 0, opacity * o * (1 - (mixedT ?? 0)));
+    paint.shader = shader;
+    paint.isAntiAlias = true;
+    canvas.drawRect(rect, paint);
+    if (mixed != null) {
+      mixed!.paint(canvas, rect, shader, o: mixedT ?? 1);
+    }
+  }
+}
+
 class BlurHash extends StatefulWidget {
   final String hash;
   final double punch;
   final Widget? child;
 
-  const BlurHash(this.hash, { this.punch = 1.0, this.child, super.key});
+  const BlurHash(
+    this.hash, {
+    this.punch = 1.0,
+    this.child,
+    super.key,
+  });
 
-  static const _shader12 = 'packages/blurhash_shader/shaders/blurhash_12.frag';
   static const _shader64 = 'packages/blurhash_shader/shaders/blurhash_64.frag';
-  static final Map<(String, double), BlurData> _blurHashDataCache = {};
-  static final Map<String, ui.FragmentProgram> _shaderCache = {};
-  static final Map<String, Future<ui.FragmentProgram>> _shaderCacheFuture = {};
+  static final Map<String, BlurData> _blurHashDataCache = {};
 
-  static Future loadShader() {
-    return Future.wait([
-      getShader(_shader12),
-      getShader(_shader64),
-    ]);
+  static ui.FragmentProgram? _fragmentProgram;
+
+  static Future loadShader() async {
+    _fragmentProgram ??= await ui.FragmentProgram.fromAsset(_shader64);
   }
 
-  static Future<ui.FragmentShader> getShader(String assetKey) async {
-    if (_shaderCache.containsKey(assetKey)) {
-      return _shaderCache[assetKey]!.fragmentShader();
+  static ui.FragmentShader getShader() {
+    if (_fragmentProgram == null) {
+      throw Exception(
+          'BlurHashShader not loaded, please call await BlurHash.loadShader() in the main function');
     }
-    if (_shaderCacheFuture.containsKey(assetKey)) {
-      return (await _shaderCacheFuture[assetKey]!).fragmentShader();
-    }
-    final shader = ui.FragmentProgram.fromAsset(assetKey);
-    _shaderCacheFuture[assetKey] = shader;
-    shader.then((v) {
-      _shaderCache[assetKey] = v;
-      _shaderCacheFuture.remove(assetKey);
-    });
-    return (await shader).fragmentShader();
+    return _fragmentProgram!.fragmentShader();
   }
 
   static BlurData decode(String blurHash, {double punch = 1.0}) {
-    if (_blurHashDataCache.containsKey((blurHash, punch))) {
-      return _blurHashDataCache[(blurHash, punch)]!;
+    final key = '$blurHash-$punch';
+    if (_blurHashDataCache.containsKey(key)) {
+      return _blurHashDataCache[key]!;
     }
     final sizeFlag = decode83(blurHash[0]);
     final numY = (sizeFlag ~/ 9) + 1;
@@ -70,88 +193,79 @@ class BlurHash extends StatefulWidget {
       }
       return color;
     });
-    final data = (
-      w: numX,
-      h: numY,
+    final data = BlurData(
+      width: numX,
+      height: numY,
       quantised: maximumValue,
       punch: punch,
-      colors: colors
+      colors: colors,
     );
-    _blurHashDataCache[(blurHash, punch)] = data;
+    _blurHashDataCache[key] = data;
     return data;
   }
 
   @override
   State<BlurHash> createState() => _BlurHashState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<String>('hash', hash));
+    properties.add(DiagnosticsProperty<double>('punch', punch));
+  }
 }
 
 class _BlurHashState extends State<BlurHash> {
-  ui.FragmentShader? shader;
-
-  late final BlurData data;
-  late final bool small;
+  final shader = BlurHash.getShader();
 
   @override
-  void initState() {
-    data = BlurHash.decode(widget.hash, punch: widget.punch);
-    small = (data.w * data.h) <= 12;
-    final assetKey = small ? BlurHash._shader12 : BlurHash._shader64;
-    if (BlurHash._shaderCache.containsKey(assetKey)) {
-      shader = BlurHash._shaderCache[assetKey]!.fragmentShader();
-    } else {
-      BlurHash.getShader(assetKey).then((value) {
-        setState(() {
-          shader = value;
-        });
-      });
-    }
-    super.initState();
+  void dispose() {
+    shader.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (shader == null) return widget.child ?? const SizedBox.shrink();
+    final data = BlurHash.decode(widget.hash, punch: widget.punch);
     return CustomPaint(
       isComplex: true,
-      painter: BlurHashPainter(shader!, data, maxColorSize: small ? 12 : 64),
+      willChange: false,
+      painter: BlurHashPainter(data, shader),
       child: widget.child,
     );
   }
 }
 
 class BlurHashPainter extends CustomPainter {
-  final ui.FragmentShader shader;
   final BlurData data;
-  final int maxColorSize;
+  final ui.FragmentShader shader;
 
-  BlurHashPainter(this.shader, this.data, {this.maxColorSize = 64});
+  BlurHashPainter(
+    this.data,
+    this.shader,
+  );
 
   @override
   void paint(Canvas canvas, Size size) {
-    shader.setFloat(0, size.width);
-    shader.setFloat(1, size.height);
-    shader.setFloat(2, data.w.toDouble());
-    shader.setFloat(3, data.h.toDouble());
-    final l = max(maxColorSize, data.colors.length);
-    for (int i = 0; i < l; i++) {
-      if (i < data.colors.length) {
-        final color = data.colors[i];
-        shader.setFloat(4 + i * 3, color.$1);
-        shader.setFloat(5 + i * 3, color.$2);
-        shader.setFloat(6 + i * 3, color.$3);
-      } else {
-        shader.setFloat(4 + i * 3, 0);
-        shader.setFloat(5 + i * 3, 0);
-        shader.setFloat(6 + i * 3, 0);
-      }
-    }
-    final Paint paint = Paint();
-    paint.shader = shader;
-    canvas.drawRect(Offset.zero & size, paint);
+    data.paint(
+      canvas,
+      Offset.zero & size,
+      shader,
+    );
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    if (oldDelegate is BlurHashPainter) {
+      return oldDelegate.data != data;
+    }
+    return true;
+  }
+
+  @override
+  bool hitTest(Offset position) {
+    return false;
+  }
 }
 
 class BlurHashImageProvider extends ImageProvider<BlurHashImageProvider> {
@@ -176,15 +290,14 @@ class BlurHashImageProvider extends ImageProvider<BlurHashImageProvider> {
   Future<ImageInfo> _loadAsync(BlurHashImageProvider key) async {
     assert(key == this);
     final data = BlurHash.decode(hash, punch: punch);
-    final small = (data.w * data.h) <= 12;
-    final shader = await BlurHash.getShader(
-        small ? BlurHash._shader12 : BlurHash._shader64);
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    BlurHashPainter(shader, data, maxColorSize: small ? 12 : 64)
-        .paint(canvas, Size(size.toDouble(), size.toDouble()));
+    final shader = BlurHash.getShader();
+    data.paint(
+        canvas, Offset.zero & Size(size.toDouble(), size.toDouble()), shader);
     final picture = recorder.endRecording();
     final image = await picture.toImage(size, size);
+    shader.dispose();
     return ImageInfo(image: image, scale: key.scale);
   }
 
@@ -208,4 +321,90 @@ class BlurHashImageProvider extends ImageProvider<BlurHashImageProvider> {
   @override
   String toString() =>
       '$runtimeType($hash, punch: $punch, size: $size, scale: $scale)';
+}
+
+class BlurHashDecoration extends Decoration {
+  final BlurData data;
+  final ShapeBorder? shape;
+
+  BlurHashDecoration(String hash, {this.shape}) : data = BlurHash.decode(hash);
+
+  const BlurHashDecoration.data(this.data, {this.shape});
+
+  @override
+  bool get isComplex => true;
+
+  @override
+  BlurHashDecoration? lerpFrom(Decoration? a, double t) {
+    assert(debugAssertIsValid());
+    if (a is BlurHashDecoration) {
+      return BlurHashDecoration.data(
+        a.data.lerp(data, t),
+        shape: ShapeBorder.lerp(a.shape, shape, t),
+      );
+    }
+    return this;
+  }
+
+  @override
+  BlurHashDecoration? lerpTo(Decoration? b, double t) {
+    assert(debugAssertIsValid());
+    if (b is BlurHashDecoration) {
+      return BlurHashDecoration.data(
+        data.lerp(b.data, t),
+        shape: ShapeBorder.lerp(shape, b.shape, t),
+      );
+    }
+    return this;
+  }
+
+  @override
+  BoxPainter createBoxPainter([void Function()? onChanged]) {
+    return _BlurHashDecorationPainter(data, shape, onChanged);
+  }
+
+  @override
+  bool hitTest(Size size, Offset position, {TextDirection? textDirection}) {
+    if (shape == null) return true;
+    return shape!
+        .getOuterPath(Offset.zero & size, textDirection: textDirection)
+        .contains(position);
+  }
+
+  @override
+  getClipPath(Rect rect, TextDirection textDirection) {
+    if (shape == null) return Path()..addRect(rect);
+    return shape!.getInnerPath(rect, textDirection: textDirection);
+  }
+}
+
+class _BlurHashDecorationPainter extends BoxPainter {
+  final shader = BlurHash.getShader();
+  BlurData data;
+  final ShapeBorder? shape;
+
+  _BlurHashDecorationPainter(this.data, [this.shape, super.onChanged]);
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
+    final rect = offset & (configuration.size ?? Size.zero);
+    canvas.save();
+    if (shape != null) {
+      shape!.paint(canvas, rect);
+      canvas.clipPath(
+        shape!.getInnerPath(
+          rect,
+          textDirection: TextDirection.ltr,
+        ),
+      );
+    }
+    data.paint(canvas, rect, shader);
+    canvas.restore();
+  }
+
+  @override
+  void dispose() {
+    shader.dispose();
+    super.dispose();
+  }
 }
