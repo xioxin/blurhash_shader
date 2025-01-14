@@ -151,9 +151,9 @@ class _MyAppState extends State<MyApp> {
                       setState(() {
                         hash = newHash;
                       });
-                      // Future(() {
-                      //   controller.text = newHash;
-                      // });
+                      Future(() {
+                        controller.text = newHash;
+                      });
                     },
                     child: Text("Random")),
               ],

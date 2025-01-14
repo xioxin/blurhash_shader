@@ -10,3 +10,9 @@ Initial release
 - Fix the issue that the blurhash value will not be updated when it is dynamically modified
 - Optimize the way of loading and unloading Shader, now Shader must be preloaded.
 - Add support for Decoration and add support for transition animations
+
+## 1.1.1
+- 修复 BlurHashDecoration 位置发生偏移。
+
+<!-- EN: -->
+- Fix the position offset of BlurHashDecoration.

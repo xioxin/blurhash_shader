@@ -4,6 +4,7 @@
 #define MAX_COLOR_COUNT 64
 
 out vec4 fragColor;
+uniform vec2 startPos;
 uniform vec2 iResolution;
 uniform vec2 num;
 uniform vec3 colors[MAX_COLOR_COUNT];
@@ -19,7 +20,7 @@ float linearTosRGB(float value) {
 
 void main() {
     vec2 fragCoord = FlutterFragCoord();
-    vec2 uv = fragCoord.xy / iResolution.xy;
+    vec2 uv = (fragCoord.xy - startPos.xy) / iResolution.xy;
     vec3 color = vec3(0.0);
     vec2 uvpi = uv * PI;
     float size = num.x * num.y;
@@ -33,8 +34,6 @@ void main() {
         vec2 basics = uvpi * loopPos;
         color += sColor * cos(basics.x) * cos(basics.y);
     }
-
-//    fragColor = vec4(1.0, 1.0, 1.0, 1.0);
 
     fragColor = vec4(
     linearTosRGB(color.r),

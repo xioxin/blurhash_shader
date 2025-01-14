@@ -105,29 +105,33 @@ class BlurData {
 
   void paint(Canvas canvas, Rect rect, ui.FragmentShader shader,
       {double o = 1.0}) {
-    shader.setFloat(0, rect.width);
-    shader.setFloat(1, rect.height);
-    shader.setFloat(2, width.toDouble());
-    shader.setFloat(3, height.toDouble());
-    shader.setFloat(4, 1.0);
+    shader.setFloat(0, rect.left);
+    shader.setFloat(1, rect.top);
+    shader.setFloat(2, rect.width);
+    shader.setFloat(3, rect.height);
+    shader.setFloat(4, width.toDouble());
+    shader.setFloat(5, height.toDouble());
+
     final l = max(64, colors.length);
     for (int i = 0; i < l; i++) {
       if (i < colors.length) {
         final color = colors[i];
-        shader.setFloat(4 + i * 3, color.r);
-        shader.setFloat(5 + i * 3, color.g);
-        shader.setFloat(6 + i * 3, color.b);
+        shader.setFloat(6 + i * 3, color.r);
+        shader.setFloat(7 + i * 3, color.g);
+        shader.setFloat(8 + i * 3, color.b);
       } else {
-        shader.setFloat(4 + i * 3, 0);
-        shader.setFloat(5 + i * 3, 0);
         shader.setFloat(6 + i * 3, 0);
+        shader.setFloat(7 + i * 3, 0);
+        shader.setFloat(8 + i * 3, 0);
       }
     }
     final Paint paint = Paint();
     paint.color = Color.fromRGBO(0, 0, 0, opacity * o * (1 - (mixedT ?? 0)));
     paint.shader = shader;
     paint.isAntiAlias = true;
+
     canvas.drawRect(rect, paint);
+
     if (mixed != null) {
       mixed!.paint(canvas, rect, shader, o: mixedT ?? 1);
     }
