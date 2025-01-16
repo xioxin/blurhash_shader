@@ -16,3 +16,10 @@ Initial release
 
 <!-- EN: -->
 - Fix the position offset of BlurHashDecoration.
+
+## 1.1.2
+- 修复使用Impeller渲染引擎时显示异常。
+
+<!-- EN: -->
+- Fix the display exception when using the Impeller rendering engine.
+

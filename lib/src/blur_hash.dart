@@ -116,13 +116,15 @@ class BlurData {
     for (int i = 0; i < l; i++) {
       if (i < colors.length) {
         final color = colors[i];
-        shader.setFloat(6 + i * 3, color.r);
-        shader.setFloat(7 + i * 3, color.g);
-        shader.setFloat(8 + i * 3, color.b);
+        shader.setFloat(6 + i * 4, color.r);
+        shader.setFloat(7 + i * 4, color.g);
+        shader.setFloat(8 + i * 4, color.b);
+        shader.setFloat(9 + i * 4, 1.0);
       } else {
-        shader.setFloat(6 + i * 3, 0);
-        shader.setFloat(7 + i * 3, 0);
-        shader.setFloat(8 + i * 3, 0);
+        shader.setFloat(6 + i * 4, 0);
+        shader.setFloat(7 + i * 4, 0);
+        shader.setFloat(8 + i * 4, 0);
+        shader.setFloat(9 + i * 4, 0);
       }
     }
     final Paint paint = Paint();

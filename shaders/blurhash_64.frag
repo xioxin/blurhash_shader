@@ -7,7 +7,7 @@ out vec4 fragColor;
 uniform vec2 startPos;
 uniform vec2 iResolution;
 uniform vec2 num;
-uniform vec3 colors[MAX_COLOR_COUNT];
+uniform vec4 colors[MAX_COLOR_COUNT];
 
 float linearTosRGB(float value) {
     float v = max(0, min(1, value));
@@ -26,7 +26,7 @@ void main() {
     float size = num.x * num.y;
     for (int index = 0; index < MAX_COLOR_COUNT; index++) {
         if (index >= size) break;
-        vec3 sColor = colors[index];
+        vec3 sColor = colors[index].rgb;
         float fIndex = float(index);
         float row = floor(fIndex / num.x);
         float col = floor(fIndex - (row * num.x));

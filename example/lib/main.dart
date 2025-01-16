@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:blurhash_shader/blurhash_shader.dart';
+import 'list.dart';
 
 const testHash = [
   // 4 * 3
@@ -47,7 +48,7 @@ enum BlurType {
 
 void main() async {
   await BlurHash.loadShader();
-  runApp(const MyApp());
+  runApp(MaterialApp(home: const MyApp()));
 }
 
 class MyApp extends StatefulWidget {
@@ -89,75 +90,85 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('BlurHash Shader Example'),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 200,
-                      width: 200,
-                      child: BlurHash(hash),
-                    ),
-                    const SizedBox(width: 16),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 1000),
-                      curve: Curves.easeInOutCubicEmphasized,
-                      decoration: BlurHashDecoration(
-                        hash,
-                        shape: const OvalBorder(
-                          side: BorderSide(
-                            color: Colors.red,
-                            width: 2,
-                          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('BlurHash Shader Example'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ListPage(),
+                ),
+              );
+            },
+            icon: Icon(Icons.list),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    height: 150,
+                    width: 150,
+                    child: BlurHash(hash),
+                  ),
+                  const SizedBox(width: 16),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 1000),
+                    curve: Curves.easeInOutCubicEmphasized,
+                    decoration: BlurHashDecoration(
+                      hash,
+                      shape: const OvalBorder(
+                        side: BorderSide(
+                          color: Colors.red,
+                          width: 2,
                         ),
                       ),
-                      height: 200,
-                      width: 200,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    hintText: 'Enter a BlurHash',
-                    errorText: getErrorMsg(controller.text),
+                    height: 150,
+                    width: 150,
                   ),
-                  controller: controller,
-                  onChanged: (hash) {
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  hintText: 'Enter a BlurHash',
+                  errorText: getErrorMsg(controller.text),
+                ),
+                controller: controller,
+                onChanged: (hash) {
+                  setState(() {
+                    if (isValid(hash)) {
+                      this.hash = hash;
+                    }
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                  onPressed: () {
+                    // testHash
+                    final newHash = testHash[++hashIndex % testHash.length];
                     setState(() {
-                      if (isValid(hash)) {
-                        this.hash = hash;
-                      }
+                      hash = newHash;
+                    });
+                    Future(() {
+                      controller.text = newHash;
                     });
                   },
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                    onPressed: () {
-                      // testHash
-                      final newHash = testHash[++hashIndex % testHash.length];
-                      setState(() {
-                        hash = newHash;
-                      });
-                      Future(() {
-                        controller.text = newHash;
-                      });
-                    },
-                    child: Text("Random")),
-              ],
-            ),
+                  child: Text("Random")),
+            ],
           ),
         ),
       ),

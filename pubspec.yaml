@@ -1,6 +1,6 @@
 name: blurhash_shader
 description: "Implements BlurHash to create visually appealing low-resolution image placeholders using shaders for faster rendering."
-version: 1.1.1
+version: 1.1.2
 homepage: https://github.com/xioxin/blurhash_shader
 repository: https://github.com/xioxin/blurhash_shader
 issue_tracker: https://github.com/xioxin/blurhash_shader/issues
